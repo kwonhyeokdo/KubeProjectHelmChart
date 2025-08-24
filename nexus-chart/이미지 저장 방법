@@ -1,0 +1,41 @@
+rdctl shell
+
+# 올바르게 두 폴더 생성 (brace expansion 없이 명시적으로)
+mkdir -p ~/nexus-image/plugins ~/nexus-image/etc
+
+# 비어 있어도 COPY 통과하도록 더미 파일
+touch ~/nexus-image/plugins/.keep ~/nexus-image/etc/.keep
+
+# 확인
+ls -la ~/nexus-image
+ls -la ~/nexus-image/plugins
+ls -la ~/nexus-image/etc
+
+cat > ~/nexus-image/Dockerfile <<'EOF'
+ARG NEXUS_VERSION=3.83.1
+FROM docker.io/sonatype/nexus3:${NEXUS_VERSION}
+
+# (선택) 플러그인/기본설정 추가 — 디렉터리 보장
+USER root
+RUN mkdir -p /opt/sonatype/nexus/deploy /opt/sonatype/nexus/etc
+
+COPY plugins/ /opt/sonatype/nexus/deploy/
+COPY etc/     /opt/sonatype/nexus/etc/
+
+# 소유권 정리 (Nexus 런타임 UID=200)
+RUN chown -R 200:200 /opt/sonatype/nexus/deploy /opt/sonatype/nexus/etc || true
+USER 200
+
+VOLUME /nexus-data
+EXPOSE 8081
+EOF
+
+# 내용 확인
+nl -ba ~/nexus-image/Dockerfile
+
+cd ~/nexus-image
+nerdctl build -t nexus-local:3.83.1 .
+
+nerdctl save -o /tmp/nexus.tar nexus-local:3.83.1
+nerdctl -n k8s.io load -i /tmp/nexus.tar
+nerdctl -n k8s.io images | grep nexus

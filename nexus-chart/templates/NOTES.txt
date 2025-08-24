@@ -1,0 +1,10 @@
+1. Service
+   kubectl get svc {{ include "nexus-min.fullname" . }}
+
+   - NodePort: http://<node-ip>:{{ .Values.service.nodePort }}
+   - ClusterIP: kubectl port-forward svc/{{ include "nexus-min.fullname" . }} 8081:{{ .Values.service.port }}
+
+2. 첫 로그인
+   - admin 패스워드 파일: /nexus-data/admin.password
+   - 확인:
+     kubectl exec -it sts/{{ include "nexus-min.fullname" . }} -- cat /nexus-data/admin.password

@@ -1,0 +1,2 @@
+helm install my-nexus .\nexus-chart
+kubectl exec -it my-nexus-nexus-min-0 -- cat /nexus-data/admin.password

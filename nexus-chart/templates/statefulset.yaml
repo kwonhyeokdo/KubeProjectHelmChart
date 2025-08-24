@@ -1,0 +1,80 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "nexus-min.fullname" . }}
+  labels:
+    app.kubernetes.io/name: {{ include "nexus-min.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  serviceName: {{ include "nexus-min.fullname" . }}
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "nexus-min.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "nexus-min.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      securityContext:
+        fsGroup: {{ .Values.securityContext.fsGroup }}
+      containers:
+        - name: nexus
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+          env:
+            # JVM 힙 등 튜닝이 필요하면 여기서 추가 (예: INSTALL4J_ADD_VM_PARAMS)
+            # - name: INSTALL4J_ADD_VM_PARAMS
+            #   value: "-Xms512m -Xmx2048m -XX:MaxDirectMemorySize=3g"
+          volumeMounts:
+            - name: data
+              mountPath: /nexus-data
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.probes.path }}
+              port: http
+            initialDelaySeconds: {{ .Values.probes.readinessInitialDelaySeconds }}
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: {{ .Values.probes.failureThreshold }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.probes.path }}
+              port: http
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 6
+          startupProbe:
+            httpGet:
+              path: {{ .Values.probes.path }}
+              port: http
+            initialDelaySeconds: {{ .Values.probes.startupInitialDelaySeconds }}
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: {{ .Values.probes.failureThreshold }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      initContainers:
+        # 로컬 스토리지 권한 문제 대비 (특히 Rancher Desktop)
+        - name: fix-perms
+          image: alpine:3.20
+          command: ["sh","-c","chown -R 200:200 /nexus-data || true"]
+          volumeMounts:
+            - name: data
+              mountPath: /nexus-data
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: {{ .Values.persistence.size }}
+        {{- if .Values.persistence.storageClassName }}
+        storageClassName: {{ .Values.persistence.storageClassName }}
+        {{- end }}

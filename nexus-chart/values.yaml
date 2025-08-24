@@ -1,0 +1,40 @@
+image:
+  repository: sonatype/nexus3
+  tag: "3.83.1"
+  pullPolicy: IfNotPresent
+
+service:
+  type: NodePort         # ClusterIP | NodePort | LoadBalancer
+  port: 8081
+  nodePort: 30081        # type=NodePort일 때만 의미
+
+ingress:
+  enabled: false
+  className: ""
+  host: nexus.local
+  tlsEnabled: false
+  tlsSecretName: ""
+
+persistence:
+  enabled: true
+  size: 20Gi
+  storageClassName: ""   # 기본 SC 쓰려면 빈 문자열
+
+resources:
+  requests:
+    cpu: 200m
+    memory: 1Gi
+  limits:
+    cpu: 1
+    memory: 2Gi
+
+securityContext:
+  runAsUser: 200         # nexus 사용자 UID
+  fsGroup: 200
+  runAsNonRoot: true
+
+probes:
+  path: /
+  startupInitialDelaySeconds: 60  # Nexus 초기 부팅 느림
+  readinessInitialDelaySeconds: 90
+  failureThreshold: 60
