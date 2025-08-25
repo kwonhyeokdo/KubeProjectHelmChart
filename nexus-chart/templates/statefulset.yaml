@@ -28,9 +28,14 @@ spec:
             - name: http
               containerPort: {{ .Values.service.port }}
           env:
-            # JVM 힙 등 튜닝이 필요하면 여기서 추가 (예: INSTALL4J_ADD_VM_PARAMS)
-            # - name: INSTALL4J_ADD_VM_PARAMS
-            #   value: "-Xms512m -Xmx2048m -XX:MaxDirectMemorySize=3g"
+              - name: TZ
+                value: Asia/Seoul
+              # 자바애플리케이션은 JVM까지 고정해야 함 (중요)
+              - name: INSTALL4J_ADD_VM_PARAMS
+                value: "-Duser.timezone=Asia/Seoul -Xms512m -Xmx1536m -XX:MaxDirectMemorySize=2g
+              # JVM 힙 등 튜닝이 필요하면 여기서 추가 (예: INSTALL4J_ADD_VM_PARAMS)
+              - name: INSTALL4J_ADD_VM_PARAMS
+                value: "-Xms512m -Xmx2048m -XX:MaxDirectMemorySize=3g"
           volumeMounts:
             - name: data
               mountPath: /nexus-data

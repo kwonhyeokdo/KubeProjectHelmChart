@@ -1,0 +1,46 @@
+fullnameOverride: ""        # "mysql"로 고정하고 싶으면 mysql 로 설정
+
+image:
+  repository: mysql
+  tag: "8.4"                # 원하는 버전으로 변경 가능
+  pullPolicy: IfNotPresent
+  imagePullSecrets: []      # 예: ["regcred"]
+
+mysql:
+  rootPassword: "rootpw!"   # Secret로 저장됨 (필수)
+  database: "kube_project"  # 초기 생성 DB
+  username: "app"           # (옵션) 초기 유저
+  password: "apppw!"        # (옵션) 초기 유저 비번
+  port: 3306
+
+service:
+  type: NodePort            # ClusterIP | NodePort | LoadBalancer
+  nodePort: 30306           # NodePort일 때만 사용
+
+persistence:
+  enabled: true
+  size: 5Gi
+  storageClassName: ""      # 기본 SC 쓰려면 빈 문자열 유지
+
+resources:
+  requests:
+    cpu: 200m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+securityContext:
+  runAsUser: 999            # mysql 사용자 UID(공식 이미지 기준)
+  fsGroup: 999
+  runAsNonRoot: true
+
+probes:
+  startupInitialDelaySeconds: 20
+  readinessInitialDelaySeconds: 20
+  failureThreshold: 60
+
+extraEnv:
+  - name: TZ
+    value: Asia/Seoul
+existingSecret: ""          # 기존 시크릿을 쓰고 싶으면 이름 지정 (키는 아래 secret.yaml 참고)

@@ -1,0 +1,12 @@
+1) Service 확인
+   kubectl get svc {{ include "mysql-chart.fullname" . }}
+
+   - NodePort:    mysql -h 127.0.0.1 -P {{ .Values.service.nodePort }} -uroot -p
+   - ClusterIP:   kubectl port-forward svc/{{ include "mysql-chart.fullname" . }} 33306:{{ .Values.mysql.port }}
+
+2) Secret 비밀번호 확인
+   kubectl get secret {{ include "mysql-chart.fullname" . }} -o jsonpath="{.data.MYSQL_ROOT_PASSWORD}" | base64 -d
+
+3) 초기 DB/유저
+   - DB: {{ .Values.mysql.database }}
+   - User: {{ .Values.mysql.username | default "root" }}
